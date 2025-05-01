@@ -3,80 +3,359 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宠物GPS定位应用</title>
+    <title>宠物GPS - 仪表盘</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Global styles */
         body {
             font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f8f9fa;
+            background-color: #e5e7eb; /* Lighter gray background for the page */
         }
-        iframe {
-            border: none;
-            width: 100%;
-            height: 100%;
-        }
-        .device-frame {
-            width: 375px;
-            height: 812px;
-            background-color: white;
-            border-radius: 40px;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+
+        /* Phone frame container styles */
+        .phone-frame {
+            /* REMOVED: aspect-ratio: 9 / 19.5; */
+            width: 100%; /* Take full width of grid column */
+            background-color: #f8f9fa; /* Default background for content area */
+            border-radius: 2rem; /* Slightly less rounded */
+            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            overflow: hidden; /* Still hide overflow from frame */
             position: relative;
+            border: 6px solid black; /* Thinner bezel */
+            display: flex;
+            flex-direction: column;
         }
-        .device-notch {
-            width: 180px;
-            height: 30px;
-            background-color: #000;
-            border-bottom-left-radius: 15px;
-            border-bottom-right-radius: 15px;
+
+        .phone-title {
+             font-size: 0.7rem; /* Smaller title */
+             font-weight: 600;
+             color: #d1d5db; /* Lighter gray text */
+             text-align: center;
+             padding: 0.3rem 0;
+             background-color: black; /* Match bezel */
+             flex-shrink: 0; /* Prevent title from shrinking */
+             border-bottom: 1px solid #374151; /* Separator */
+        }
+
+        /* Inner content wrapper for scaling */
+        .phone-screen-content-wrapper {
+             overflow: hidden; /* Clip the scaled content */
+             position: relative; /* Context for the absolutely positioned scaled div */
+             width: 100%;
+             flex-grow: 1; /* Allow wrapper to take remaining space */
+        }
+
+        .phone-screen-content {
+            /* Fixed design width, height is now auto/determined by content */
+            width: 375px;
+            /* REMOVED: height: 812px; */
             position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            transform: scale(var(--scale-factor, 1)); /* Will be set by JS based on width */
+            overflow: visible; /* Allow content to determine height */
+            background-color: inherit;
+             /* Ensure original body styles don't add extra space */
+            padding-bottom: 0 !important;
+            margin: 0 !important;
+        }
+
+
+        /* --- Copied Styles from original files --- */
+        /* Ensure these styles work within the scaled context */
+        .map-preview, .map-container { position: relative; background-size: cover; background-position: center; }
+        .timeline-line { position: absolute; left: 18px; top: 24px; bottom: 24px; width: 2px; background-color: #E5E7EB; z-index: 0; }
+        .path-line { border: 2px dashed #3B82F6; position: absolute; width: 60%; height: 40%; border-radius: 50%; top: 30%; left: 20%; transform: rotate(-30deg); border-right: none; border-bottom: none; }
+        .start-point { position: absolute; left: 20%; top: 70%; }
+        .end-point { position: absolute; left: 80%; top: 30%; }
+        .location-marker { position: absolute; transform: translate(-50%, -50%); z-index: 5; /* Ensure markers are above other elements */ }
+        /* Adjust map marker positions slightly if needed */
+        .pet-marker { left: 60%; top: 45%; }
+        .user-marker { left: 45%; top: 55%; }
+        .distance-line { position: absolute; left: 45%; top: 55%; width: 15%; height: 10%; border-top: 2px dashed #3B82F6; transform: rotate(-45deg); transform-origin: 0 0; }
+        .status-online { background-color: #10B981; }
+        .status-offline { background-color: #9CA3AF; }
+        .status-low-battery { background-color: #F59E0B; }
+        .safe-zone { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 60%; height: 60%; border: 2px dashed #10B981; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 3; }
+        .zone-center { width: 10px; height: 10px; background-color: #10B981; border-radius: 50%; }
+        .resize-handle { position: absolute; width: 16px; height: 16px; background-color: white; border: 2px solid #10B981; border-radius: 50%; z-index: 4; cursor: pointer;}
+        .handle-n { top: -8px; left: 50%; transform: translateX(-50%); }
+        .handle-e { right: -8px; top: 50%; transform: translateY(-50%); }
+        .handle-s { bottom: -8px; left: 50%; transform: translateX(-50%); }
+        .handle-w { left: -8px; top: 50%; transform: translateY(-50%); }
+        .share-location-marker { position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); }
+
+        /* Ensure map containers have minimum height */
+        .map-container {
+            min-height: 300px; /* Adjust as needed */
+            position: relative; /* Crucial for absolute children */
+        }
+        /* Fix for Map page address card and mode buttons */
+        .map-page-map-container .map-address-card {
+             position: absolute;
+             bottom: 4px; /* Adjust spacing */
+             left: 4px;
+             right: 4px;
+             z-index: 10;
+             padding: 0 1rem; /* Add horizontal padding */
+        }
+         .map-page-map-container .map-mode-buttons {
+            position: absolute;
+            right: 1rem;
+            bottom: 1rem; /* Position above address card */
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem; /* space-y-2 */
             z-index: 10;
         }
+        /* Fix for Geofence map container */
+        .geofence-map-container {
+             min-height: 250px; /* Might need less height */
+             position: relative;
+        }
+        /* Ensure controls are below geofence map */
+        .geofence-controls {
+            position: relative; /* Ensure it flows correctly */
+            z-index: 1;
+        }
+
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-6 bg-gray-100">
-    <div class="flex flex-col md:flex-row gap-8">
-        <div class="flex flex-col items-center">
-            <h2 class="text-lg font-semibold mb-3 text-gray-700">宠物GPS定位应用原型</h2>
-            <div class="device-frame">
-                <div class="device-notch"></div>
-                <iframe id="appFrame" src="home.html"></iframe>
+<body class="p-4 md:p-6">
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-8 text-center">宠物GPS - 概览</h1>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 max-w-full mx-auto">
+
+        <!-- Section: Home -->
+        <div class="phone-frame">
+            <div class="phone-title">首页</div>
+            <div class="phone-screen-content-wrapper">
+                <div class="phone-screen-content bg-gray-50">
+                    <!-- Content from home.html -->
+                    <div class="bg-white px-4 py-6 shadow-sm"> <div class="flex justify-between items-center"> <div> <h1 class="text-xl font-bold text-gray-800">宠物追踪</h1> <p class="text-sm text-gray-500">欢迎回来，铲屎官</p> </div> <div class="flex items-center space-x-3"> <button class="text-gray-600 bg-gray-100 p-2 rounded-full"> <i class="fas fa-bell text-lg"></i> </button> <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white"> <i class="fas fa-user"></i> </div> </div> </div> </div>
+                    <div class="px-4 py-4"> <div class="mb-6"> <h2 class="text-lg font-semibold text-gray-700 mb-3">我的宠物</h2> <div class="bg-white rounded-xl shadow-sm p-4 mb-3 relative"> <div class="status-online w-3 h-3 rounded-full absolute right-4 top-4"></div> <div class="flex items-center"> <div class="w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0"> <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div> <h3 class="font-bold text-gray-800">奶糖</h3> <p class="text-sm text-gray-500">柯基 • 2岁</p> <div class="flex items-center text-sm text-green-600 mt-1"> <i class="fas fa-signal mr-1"></i> <span>信号良好</span> </div> </div> </div> <div class="mt-3 flex justify-between items-center"> <div> <p class="text-xs text-gray-500">当前位置</p> <p class="text-sm font-medium text-gray-700">北京市朝阳区建国路89号</p> </div> <button class="bg-blue-500 text-white py-2 px-4 rounded-lg text-sm"> <i class="fas fa-map-marker-alt mr-1"></i> 查看 </button> </div> </div> <div class="bg-white rounded-xl shadow-sm p-4 relative"> <div class="status-offline w-3 h-3 rounded-full absolute right-4 top-4"></div> <div class="flex items-center"> <div class="w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0"> <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div> <h3 class="font-bold text-gray-800">咪咪</h3> <p class="text-sm text-gray-500">橘猫 • 3岁</p> <div class="flex items-center text-sm text-gray-500 mt-1"> <i class="fas fa-power-off mr-1"></i> <span>离线 (2小时前)</span> </div> </div> </div> <div class="mt-3 flex justify-between items-center"> <div> <p class="text-xs text-gray-500">最后位置</p> <p class="text-sm font-medium text-gray-700">北京市朝阳区建国路89号</p> </div> <button class="bg-gray-200 text-gray-600 py-2 px-4 rounded-lg text-sm"> <i class="fas fa-map-marker-alt mr-1"></i> 查看 </button> </div> </div> </div> <div class="mb-6"> <h2 class="text-lg font-semibold text-gray-700 mb-3">快捷操作</h2> <div class="grid grid-cols-4 gap-4"> <div class="flex flex-col items-center"> <div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mb-1"> <i class="fas fa-map-marker-alt text-blue-500 text-xl"></i> </div> <span class="text-xs text-gray-700">实时位置</span> </div> <div class="flex flex-col items-center"> <div class="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center mb-1"> <i class="fas fa-route text-purple-500 text-xl"></i> </div> <span class="text-xs text-gray-700">历史轨迹</span> </div> <div class="flex flex-col items-center"> <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mb-1"> <i class="fas fa-draw-polygon text-green-500 text-xl"></i> </div> <span class="text-xs text-gray-700">安全区域</span> </div> <div class="flex flex-col items-center"> <div class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mb-1"> <i class="fas fa-share-alt text-amber-500 text-xl"></i> </div> <span class="text-xs text-gray-700">位置分享</span> </div> </div> </div> <div class="mb-6"> <h2 class="text-lg font-semibold text-gray-700 mb-3">设备状态</h2> <div class="bg-white rounded-xl shadow-sm p-4"> <div class="flex justify-between items-center mb-3"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3"> <i class="fas fa-microchip text-blue-500"></i> </div> <div> <h3 class="font-medium text-gray-800">奶糖的追踪器</h3> <p class="text-xs text-gray-500">最后更新: 刚刚</p> </div> </div> <div class="text-right"> <div class="flex items-center text-sm text-green-600"> <i class="fas fa-circle text-xs mr-1"></i> <span>活跃</span> </div> </div> </div> <div class="flex justify-between mb-2"> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">电池</p> <div class="flex items-center justify-center"> <i class="fas fa-battery-three-quarters text-green-500 mr-1"></i> <span class="font-medium">78%</span> </div> </div> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">信号</p> <div class="flex items-center justify-center"> <i class="fas fa-signal text-green-500 mr-1"></i> <span class="font-medium">优</span> </div> </div> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">温度</p> <div class="flex items-center justify-center"> <i class="fas fa-temperature-low text-blue-500 mr-1"></i> <span class="font-medium">26°C</span> </div> </div> </div> </div> </div> </div>
+                    <!-- End Home Content -->
+                </div>
             </div>
         </div>
-        
-        <div class="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">页面导航</h2>
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="document.getElementById('appFrame').src='home.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-home mr-2"></i>首页
-                </button>
-                <button onclick="document.getElementById('appFrame').src='map.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-map-marker-alt mr-2"></i>地图
-                </button>
-                <button onclick="document.getElementById('appFrame').src='history.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-history mr-2"></i>历史轨迹
-                </button>
-                <button onclick="document.getElementById('appFrame').src='pets.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-paw mr-2"></i>宠物管理
-                </button>
-                <button onclick="document.getElementById('appFrame').src='devices.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-microchip mr-2"></i>设备管理
-                </button>
-                <button onclick="document.getElementById('appFrame').src='settings.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-cog mr-2"></i>设置
-                </button>
-                <button onclick="document.getElementById('appFrame').src='geofence.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-draw-polygon mr-2"></i>安全区域
-                </button>
-                <button onclick="document.getElementById('appFrame').src='share.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-share-alt mr-2"></i>位置分享
-                </button>
+
+        <!-- Section: Map -->
+        <div class="phone-frame">
+             <div class="phone-title">地图</div>
+            <div class="phone-screen-content-wrapper">
+                 <div class="phone-screen-content bg-gray-50">
+                     <!-- Content from map.html -->
+                    <div class="bg-white px-4 py-4 shadow-sm"> <div class="flex items-center"> <a href="#" class="mr-4" onclick="return false;"> <i class="fas fa-arrow-left text-gray-600 text-lg"></i> </a> <h1 class="text-lg font-semibold text-gray-800">地图</h1> </div> </div>
+                    <div class="px-4 py-3 bg-white border-b border-gray-200"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full overflow-hidden mr-3"> <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div class="flex-1"> <div class="flex justify-between items-center"> <h3 class="font-semibold text-gray-800">奶糖</h3> <div class="flex items-center text-sm text-green-600"> <i class="fas fa-circle text-xs mr-1"></i> <span>在线</span> </div> </div> <p class="text-xs text-gray-500">最后更新: 1分钟前</p> </div> <div class="ml-3"> <button class="bg-gray-100 p-2 rounded-full"> <i class="fas fa-chevron-down text-gray-600"></i> </button> </div> </div> </div>
+                    <div class="px-4 py-2 bg-white border-b border-gray-200 flex items-center justify-between"> <div class="flex items-center space-x-4"> <button class="text-sm text-gray-600 bg-gray-100 py-1 px-3 rounded-full flex items-center"> <i class="fas fa-layer-group mr-1"></i> <span>图层</span> </button> <button class="text-sm text-gray-600 bg-gray-100 py-1 px-3 rounded-full flex items-center"> <i class="fas fa-location-arrow mr-1"></i> <span>定位</span> </button> </div> <div class="flex space-x-1"> <button class="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600"> <i class="fas fa-plus"></i> </button> <button class="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600"> <i class="fas fa-minus"></i> </button> </div> </div>
+
+                    <!-- Map Container - Using specific class for styling -->
+                    <div class="map-container map-page-map-container" style="height: 450px; background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&q=80');">
+                        <!-- Distance line (might be visually complex) -->
+                        <!-- <div class="distance-line"></div> -->
+                        <!-- User marker -->
+                        <div class="location-marker user-marker"> <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white shadow-md"> <i class="fas fa-user text-white"></i> </div> <div class="mt-1 bg-white px-2 py-0.5 rounded-md shadow text-xs text-center font-medium"> 您的位置 </div> </div>
+                        <!-- Pet marker -->
+                        <div class="location-marker pet-marker"> <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center border-2 border-white shadow-md relative"> <i class="fas fa-paw text-white"></i> <div class="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow"> <div class="w-2.5 h-2.5 bg-green-500 rounded-full"></div> </div> </div> <div class="mt-1 bg-white px-2 py-0.5 rounded-md shadow text-xs text-center font-medium"> 奶糖 • 100米 </div> </div>
+
+                        <!-- Address Info Card - Positioned Absolutely -->
+                        <div class="map-address-card">
+                             <div class="bg-white rounded-xl shadow-lg p-3">
+                                <div class="flex justify-between items-start"> <div class="flex-1 mr-2"> <h3 class="font-semibold text-gray-800 text-sm mb-0.5 leading-tight">北京市朝阳区建国路89号</h3> <p class="text-xs text-gray-500">更新于: 15:23</p> </div> <button class="ml-2 flex-shrink-0 bg-blue-500 text-white py-1.5 px-3 rounded-lg text-xs font-semibold"> <i class="fas fa-directions mr-1"></i> 导航 </button> </div>
+                                <div class="mt-2 flex items-center border-t border-gray-100 pt-2"> <i class="fas fa-running text-gray-500 mr-2 text-sm"></i> <span class="text-xs text-gray-600">宠物正在移动, 速度: 3 km/h</span> </div>
+                            </div>
+                        </div>
+
+                         <!-- Mode Buttons - Positioned Absolutely -->
+                        <div class="map-mode-buttons">
+                            <button class="w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 border border-gray-200 hover:bg-gray-100"> <i class="fas fa-satellite text-sm"></i> </button>
+                            <button class="w-9 h-9 bg-blue-500 rounded-full shadow-md flex items-center justify-center text-white"> <i class="fas fa-map text-sm"></i> </button>
+                            <button class="w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 border border-gray-200 hover:bg-gray-100"> <i class="fas fa-road text-sm"></i> </button>
+                        </div>
+                    </div>
+                    <!-- End Map Content -->
+                </div>
             </div>
         </div>
-    </div>
+
+        <!-- Section: History -->
+        <div class="phone-frame">
+            <div class="phone-title">历史轨迹</div>
+            <div class="phone-screen-content-wrapper">
+                 <div class="phone-screen-content bg-gray-50">
+                    <!-- Content from history.html -->
+                    <div class="bg-white px-4 py-4 shadow-sm"> <div class="flex items-center justify-between"> <div class="flex items-center"> <a href="#" class="mr-4" onclick="return false;"><i class="fas fa-arrow-left text-gray-600 text-lg"></i></a> <h1 class="text-lg font-semibold text-gray-800">历史轨迹</h1> </div> <button class="text-gray-600 bg-gray-100 p-2 rounded-full"> <i class="fas fa-calendar-alt"></i> </button> </div> </div>
+                    <div class="px-4 py-3 bg-white border-b border-gray-200"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full overflow-hidden mr-3"> <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div class="flex-1"> <div class="flex justify-between items-center"> <h3 class="font-semibold text-gray-800">奶糖</h3> <span class="text-xs text-gray-500">今天，7月20日</span> </div> <div class="flex items-center text-xs"> <span class="text-gray-500">总行程:</span> <span class="ml-1 text-blue-500 font-medium">1.8公里</span> <span class="mx-2 text-gray-300">|</span> <span class="text-gray-500">活动时间:</span> <span class="ml-1 text-blue-500 font-medium">2小时30分钟</span> </div> </div> </div> </div>
+                     <div class="map-preview mb-4" style="height: 200px; background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&q=80');"> <div class="path-line"></div> <div class="start-point"> <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"> <i class="fas fa-flag text-white text-sm"></i> </div> </div> <div class="end-point"> <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center"> <i class="fas fa-flag-checkered text-white text-sm"></i> </div> </div> <div class="absolute left-0 right-0 bottom-0 p-3 bg-gradient-to-t from-black/50 to-transparent flex justify-end"> <button class="bg-white text-gray-800 px-3 py-1 rounded-lg text-sm flex items-center"> <i class="fas fa-expand-alt mr-1 text-xs"></i> <span>查看详情</span> </button> </div> </div>
+                    <div class="px-4 pb-4"> <!-- Added pb-4 -->
+                        <div class="flex items-center justify-between mb-3"> <h3 class="text-md font-semibold text-gray-700">活动记录</h3> <div class="flex items-center text-blue-500 text-sm"> <span>筛选</span> <i class="fas fa-filter ml-1"></i> </div> </div>
+                        <div class="bg-white rounded-xl shadow-sm p-4 relative mb-4"> <div class="timeline-line"></div> <div class="flex relative z-10 mb-6"> <div class="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-home text-white"></i> </div> <div class="pt-1"> <h4 class="font-medium text-gray-800">出发</h4> <p class="text-xs text-gray-500 mb-1">早上 08:30</p> <p class="text-sm text-gray-600">北京市朝阳区建国路89号</p> </div> </div> <div class="flex relative z-10 mb-6"> <div class="w-9 h-9 bg-green-500 rounded-full flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-tree text-white"></i> </div> <div class="pt-1"> <h4 class="font-medium text-gray-800">公园活动</h4> <p class="text-xs text-gray-500 mb-1">上午 09:15 - 10:30</p> <p class="text-sm text-gray-600">朝阳公园北门</p> <div class="mt-2 px-3 py-2 bg-gray-50 rounded-lg"> <div class="flex items-center text-sm"> <i class="fas fa-running text-gray-500 mr-2"></i> <span class="text-gray-600">高活跃度: 75分钟</span> </div> </div> </div> </div> <div class="flex relative z-10 mb-6"> <div class="w-9 h-9 bg-yellow-500 rounded-full flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-utensils text-white"></i> </div> <div class="pt-1"> <h4 class="font-medium text-gray-800">休息</h4> <p class="text-xs text-gray-500 mb-1">上午 10:30 - 11:00</p> <p class="text-sm text-gray-600">宠物友好咖啡馆</p> </div> </div> <div class="flex relative z-10"> <div class="w-9 h-9 bg-red-500 rounded-full flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-home text-white"></i> </div> <div class="pt-1"> <h4 class="font-medium text-gray-800">返回</h4> <p class="text-xs text-gray-500 mb-1">上午 11:00</p> <p class="text-sm text-gray-600">北京市朝阳区建国路89号</p> </div> </div> </div>
+                        <h3 class="text-md font-semibold text-gray-700 mb-3">历史记录</h3>
+                        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-4"> <div class="divide-y divide-gray-100"> <div class="p-4"> <div class="flex justify-between items-center mb-1"> <h4 class="font-medium text-gray-800">昨天</h4> <span class="text-xs text-gray-500">7月19日</span> </div> <div class="flex items-center text-sm"> <span class="text-gray-500">总行程:</span> <span class="ml-1 text-gray-700">2.5公里</span> <span class="mx-2 text-gray-300">|</span> <span class="text-gray-500">活动时间:</span> <span class="ml-1 text-gray-700">3小时15分钟</span> </div> </div> <div class="p-4"> <div class="flex justify-between items-center mb-1"> <h4 class="font-medium text-gray-800">前天</h4> <span class="text-xs text-gray-500">7月18日</span> </div> <div class="flex items-center text-sm"> <span class="text-gray-500">总行程:</span> <span class="ml-1 text-gray-700">1.2公里</span> <span class="mx-2 text-gray-300">|</span> <span class="text-gray-500">活动时间:</span> <span class="ml-1 text-gray-700">1小时45分钟</span> </div> </div> <div class="p-4"> <div class="flex justify-between items-center mb-1"> <h4 class="font-medium text-gray-800">星期一</h4> <span class="text-xs text-gray-500">7月17日</span> </div> <div class="flex items-center text-sm"> <span class="text-gray-500">总行程:</span> <span class="ml-1 text-gray-700">3.0公里</span> <span class="mx-2 text-gray-300">|</span> <span class="text-gray-500">活动时间:</span> <span class="ml-1 text-gray-700">4小时</span> </div> </div> </div> </div>
+                    </div>
+                    <!-- End History Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Pets -->
+        <div class="phone-frame">
+            <div class="phone-title">宠物管理</div>
+            <div class="phone-screen-content-wrapper">
+                 <div class="phone-screen-content bg-gray-50">
+                    <!-- Content from pets.html -->
+                    <div class="bg-white px-4 py-4 shadow-sm"> <div class="flex justify-between items-center"> <h1 class="text-lg font-semibold text-gray-800">宠物管理</h1> <button class="bg-blue-500 text-white py-1 px-3 rounded-lg text-sm flex items-center"> <i class="fas fa-plus mr-1"></i> <span>添加宠物</span> </button> </div> </div>
+                    <div class="p-4"> <div class="mb-6"> <h2 class="text-md font-semibold text-gray-700 mb-3">我的宠物</h2> <div class="bg-white rounded-xl shadow-sm p-4 mb-4 relative overflow-hidden"> <div class="status-online w-3 h-3 rounded-full absolute right-4 top-4"></div> <div class="flex"> <div class="w-20 h-20 rounded-xl overflow-hidden mr-4 flex-shrink-0"> <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div class="flex-1"> <div class="flex justify-between items-start mb-1"> <h3 class="font-bold text-gray-800 text-lg">奶糖</h3> <button class="text-gray-400 p-1"> <i class="fas fa-ellipsis-v"></i> </button> </div> <div class="grid grid-cols-2 gap-y-1 mb-3"> <div class="flex items-center text-sm"> <i class="fas fa-paw text-gray-400 mr-2"></i> <span class="text-gray-600">柯基犬</span> </div> <div class="flex items-center text-sm"> <i class="fas fa-birthday-cake text-gray-400 mr-2"></i> <span class="text-gray-600">2岁</span> </div> <div class="flex items-center text-sm"> <i class="fas fa-venus-mars text-gray-400 mr-2"></i> <span class="text-gray-600">公</span> </div> <div class="flex items-center text-sm"> <i class="fas fa-weight text-gray-400 mr-2"></i> <span class="text-gray-600">12.5 kg</span> </div> </div> <div class="flex items-center text-sm text-green-600"> <i class="fas fa-signal mr-1"></i> <span>设备已连接</span> </div> </div> </div> <div class="flex justify-between mt-4 border-t border-gray-100 pt-3"> <button class="flex items-center justify-center text-gray-600 flex-1"> <i class="fas fa-edit mr-1"></i> <span>编辑</span> </button> <div class="w-px h-6 bg-gray-200"></div> <button class="flex items-center justify-center text-gray-600 flex-1"> <i class="fas fa-microchip mr-1"></i> <span>设备</span> </button> <div class="w-px h-6 bg-gray-200"></div> <button class="flex items-center justify-center text-blue-500 flex-1"> <i class="fas fa-map-marker-alt mr-1"></i> <span>定位</span> </button> </div> </div> <div class="bg-white rounded-xl shadow-sm p-4 mb-4 relative overflow-hidden"> <div class="status-offline w-3 h-3 rounded-full absolute right-4 top-4"></div> <div class="flex"> <div class="w-20 h-20 rounded-xl overflow-hidden mr-4 flex-shrink-0"> <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div class="flex-1"> <div class="flex justify-between items-start mb-1"> <h3 class="font-bold text-gray-800 text-lg">咪咪</h3> <button class="text-gray-400 p-1"> <i class="fas fa-ellipsis-v"></i> </button> </div> <div class="grid grid-cols-2 gap-y-1 mb-3"> <div class="flex items-center text-sm"> <i class="fas fa-paw text-gray-400 mr-2"></i> <span class="text-gray-600">橘猫</span> </div> <div class="flex items-center text-sm"> <i class="fas fa-birthday-cake text-gray-400 mr-2"></i> <span class="text-gray-600">3岁</span> </div> <div class="flex items-center text-sm"> <i class="fas fa-venus-mars text-gray-400 mr-2"></i> <span class="text-gray-600">母</span> </div> <div class="flex items-center text-sm"> <i class="fas fa-weight text-gray-400 mr-2"></i> <span class="text-gray-600">4.2 kg</span> </div> </div> <div class="flex items-center text-sm text-gray-500"> <i class="fas fa-power-off mr-1"></i> <span>设备离线 (2小时前)</span> </div> </div> </div> <div class="flex justify-between mt-4 border-t border-gray-100 pt-3"> <button class="flex items-center justify-center text-gray-600 flex-1"> <i class="fas fa-edit mr-1"></i> <span>编辑</span> </button> <div class="w-px h-6 bg-gray-200"></div> <button class="flex items-center justify-center text-gray-600 flex-1"> <i class="fas fa-microchip mr-1"></i> <span>设备</span> </button> <div class="w-px h-6 bg-gray-200"></div> <button class="flex items-center justify-center text-gray-400 flex-1"> <i class="fas fa-map-marker-alt mr-1"></i> <span>定位</span> </button> </div> </div> </div> <div class="bg-blue-50 rounded-xl p-4 mb-6"> <div class="flex"> <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-info text-blue-500"></i> </div> <div> <h3 class="font-medium text-gray-800 mb-1">设备绑定</h3> <p class="text-sm text-gray-600 mb-2">您可以为每个宠物绑定一个GPS设备，实时追踪它们的位置。</p> <button class="text-blue-500 text-sm font-medium flex items-center"> <span>查看设备</span> <i class="fas fa-chevron-right ml-1 text-xs"></i> </button> </div> </div> </div> <div class="mb-6"> <div class="flex justify-between items-center mb-3"> <h2 class="text-md font-semibold text-gray-700">健康数据</h2> <button class="text-sm text-blue-500">查看全部</button> </div> <div class="bg-white rounded-xl shadow-sm p-4"> <div class="flex items-center mb-4"> <div class="w-10 h-10 rounded-full overflow-hidden mr-3"> <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div> <h3 class="font-semibold text-gray-800">奶糖</h3> <p class="text-xs text-gray-500">最后更新: 今天 10:30</p> </div> </div> <div class="grid grid-cols-3 gap-3"> <div class="bg-orange-50 rounded-lg p-3"> <p class="text-xs text-gray-500 mb-1">活动量</p> <div class="flex items-center"> <i class="fas fa-running text-orange-500 mr-2"></i> <span class="text-lg font-semibold text-gray-800">75分钟</span> </div> </div> <div class="bg-green-50 rounded-lg p-3"> <p class="text-xs text-gray-500 mb-1">行走距离</p> <div class="flex items-center"> <i class="fas fa-shoe-prints text-green-500 mr-2"></i> <span class="text-lg font-semibold text-gray-800">1.8公里</span> </div> </div> <div class="bg-purple-50 rounded-lg p-3"> <p class="text-xs text-gray-500 mb-1">卡路里</p> <div class="flex items-center"> <i class="fas fa-fire-alt text-purple-500 mr-2"></i> <span class="text-lg font-semibold text-gray-800">320千卡</span> </div> </div> </div> </div> </div> </div>
+                    <!-- End Pets Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Devices -->
+        <div class="phone-frame">
+            <div class="phone-title">设备管理</div>
+             <div class="phone-screen-content-wrapper">
+                 <div class="phone-screen-content bg-gray-50">
+                    <!-- Content from devices.html -->
+                     <div class="bg-white px-4 py-4 shadow-sm"> <div class="flex justify-between items-center"> <div class="flex items-center"> <a href="#" class="mr-4" onclick="return false;"><i class="fas fa-arrow-left text-gray-600 text-lg"></i></a> <h1 class="text-lg font-semibold text-gray-800">设备管理</h1> </div> <button class="bg-blue-500 text-white py-1 px-3 rounded-lg text-sm flex items-center"> <i class="fas fa-plus mr-1"></i> <span>添加设备</span> </button> </div> </div>
+                     <div class="p-4"> <div class="mb-6"> <h2 class="text-md font-semibold text-gray-700 mb-3">已绑定设备</h2> <div class="bg-white rounded-xl shadow-sm p-4 mb-4 relative"> <div class="status-online w-3 h-3 rounded-full absolute right-4 top-4"></div> <div class="flex items-start mb-3"> <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-microchip text-blue-500 text-xl"></i> </div> <div class="flex-1"> <div class="flex justify-between items-start"> <div> <h3 class="font-semibold text-gray-800">宠物追踪器 Pro</h3> <p class="text-xs text-gray-500 mt-0.5">型号: XT-120</p> </div> <button class="text-gray-400 p-1"> <i class="fas fa-ellipsis-v"></i> </button> </div> <div class="flex items-center mt-1 text-sm"> <div class="flex items-center text-green-600 mr-3"> <i class="fas fa-circle text-xs mr-1"></i> <span>活跃</span> </div> <div class="flex items-center text-gray-500"> <i class="fas fa-link text-xs mr-1"></i> <span>已绑定: 奶糖</span> </div> </div> </div> </div> <div class="flex justify-between border-t border-gray-100 pt-3"> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">电池</p> <div class="flex items-center justify-center"> <i class="fas fa-battery-three-quarters text-green-500 mr-1"></i> <span class="font-medium">78%</span> </div> </div> <div class="w-px h-10 bg-gray-100"></div> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">信号</p> <div class="flex items-center justify-center"> <i class="fas fa-signal text-green-500 mr-1"></i> <span class="font-medium">优</span> </div> </div> <div class="w-px h-10 bg-gray-100"></div> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">更新频率</p> <div class="flex items-center justify-center"> <i class="fas fa-sync text-blue-500 mr-1"></i> <span class="font-medium">1分钟</span> </div> </div> </div> <div class="flex justify-between mt-3 border-t border-gray-100 pt-3"> <button class="flex items-center justify-center text-gray-600 flex-1"> <i class="fas fa-cog mr-1"></i> <span>设置</span> </button> <div class="w-px h-6 bg-gray-200"></div> <button class="flex items-center justify-center text-gray-600 flex-1"> <i class="fas fa-bell mr-1"></i> <span>提醒</span> </button> <div class="w-px h-6 bg-gray-200"></div> <button class="flex items-center justify-center text-blue-500 flex-1"> <i class="fas fa-map-marker-alt mr-1"></i> <span>定位</span> </button> </div> </div> <div class="bg-white rounded-xl shadow-sm p-4 mb-4 relative"> <div class="status-low-battery w-3 h-3 rounded-full absolute right-4 top-4"></div> <div class="flex items-start mb-3"> <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-microchip text-purple-500 text-xl"></i> </div> <div class="flex-1"> <div class="flex justify-between items-start"> <div> <h3 class="font-semibold text-gray-800">宠物追踪器 Mini</h3> <p class="text-xs text-gray-500 mt-0.5">型号: XT-90</p> </div> <button class="text-gray-400 p-1"> <i class="fas fa-ellipsis-v"></i> </button> </div> <div class="flex items-center mt-1 text-sm"> <div class="flex items-center text-amber-500 mr-3"> <i class="fas fa-exclamation-triangle text-xs mr-1"></i> <span>电量低</span> </div> <div class="flex items-center text-gray-500"> <i class="fas fa-link text-xs mr-1"></i> <span>已绑定: 咪咪</span> </div> </div> </div> </div> <div class="flex justify-between border-t border-gray-100 pt-3"> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">电池</p> <div class="flex items-center justify-center"> <i class="fas fa-battery-quarter text-amber-500 mr-1"></i> <span class="font-medium">15%</span> </div> </div> <div class="w-px h-10 bg-gray-100"></div> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">信号</p> <div class="flex items-center justify-center"> <i class="fas fa-signal text-green-500 mr-1"></i> <span class="font-medium">良</span> </div> </div> <div class="w-px h-10 bg-gray-100"></div> <div class="text-center flex-1"> <p class="text-xs text-gray-500 mb-1">更新频率</p> <div class="flex items-center justify-center"> <i class="fas fa-sync text-blue-500 mr-1"></i> <span class="font-medium">5分钟</span> </div> </div> </div> <div class="flex justify-between mt-3 border-t border-gray-100 pt-3"> <button class="flex items-center justify-center text-gray-600 flex-1"> <i class="fas fa-cog mr-1"></i> <span>设置</span> </button> <div class="w-px h-6 bg-gray-200"></div> <button class="flex items-center justify-center text-gray-600 flex-1"> <i class="fas fa-bell mr-1"></i> <span>提醒</span> </button> <div class="w-px h-6 bg-gray-200"></div> <button class="flex items-center justify-center text-blue-500 flex-1"> <i class="fas fa-map-marker-alt mr-1"></i> <span>定位</span> </button> </div> </div> </div> <div class="mb-6"> <div class="flex justify-between items-center mb-3"> <h2 class="text-md font-semibold text-gray-700">推荐设备</h2> <button class="text-sm text-blue-500">查看全部</button> </div> <div class="bg-white rounded-xl shadow-sm overflow-hidden"> <div class="p-4 border-b border-gray-100"> <div class="flex items-center"> <div class="w-16 h-16 bg-gray-100 rounded-lg mr-3 flex items-center justify-center"> <img src="https://images.unsplash.com/photo-1589254065878-42c9da997008?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="GPS设备" class="w-12 h-12 object-contain"> </div> <div class="flex-1"> <h3 class="font-semibold text-gray-800">宠物追踪器 Pro Max</h3> <p class="text-xs text-gray-500 mt-0.5">超长续航，IP68防水</p> <div class="flex items-center mt-1"> <span class="text-blue-500 font-bold">¥349</span> <span class="text-xs text-gray-400 line-through ml-1">¥399</span> </div> </div> <button class="bg-blue-500 text-white py-1 px-3 rounded-lg text-sm"> 购买 </button> </div> </div> <div class="p-4"> <div class="flex items-center"> <div class="w-16 h-16 bg-gray-100 rounded-lg mr-3 flex items-center justify-center"> <img src="https://images.unsplash.com/photo-1589254066213-a0c9dc853511?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="GPS设备" class="w-12 h-12 object-contain"> </div> <div class="flex-1"> <h3 class="font-semibold text-gray-800">宠物追踪器 Lite</h3> <p class="text-xs text-gray-500 mt-0.5">轻巧便携，适合小型宠物</p> <div class="flex items-center mt-1"> <span class="text-blue-500 font-bold">¥199</span> <span class="text-xs text-gray-400 line-through ml-1">¥259</span> </div> </div> <button class="bg-blue-500 text-white py-1 px-3 rounded-lg text-sm"> 购买 </button> </div> </div> </div> </div> <div class="mb-6"> <h2 class="text-md font-semibold text-gray-700 mb-3">设置指南</h2> <div class="bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100"> <div class="p-4 flex items-center"> <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-plug text-blue-500"></i> </div> <div class="flex-1"> <h3 class="font-medium text-gray-800">如何连接设备</h3> <p class="text-xs text-gray-500">了解如何将GPS设备与APP连接</p> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex items-center"> <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-sync-alt text-green-500"></i> </div> <div class="flex-1"> <h3 class="font-medium text-gray-800">更新设备固件</h3> <p class="text-xs text-gray-500">保持设备软件为最新版本</p> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex items-center"> <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-battery-full text-purple-500"></i> </div> <div class="flex-1"> <h3 class="font-medium text-gray-800">延长电池寿命</h3> <p class="text-xs text-gray-500">优化设置延长设备使用时间</p> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> </div> </div> </div>
+                    <!-- End Devices Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Settings -->
+        <div class="phone-frame">
+             <div class="phone-title">设置</div>
+            <div class="phone-screen-content-wrapper">
+                 <div class="phone-screen-content bg-gray-50">
+                    <!-- Content from settings.html -->
+                     <div class="bg-white px-4 py-4 shadow-sm"> <h1 class="text-lg font-semibold text-gray-800">设置</h1> </div>
+                     <div class="p-4"> <div class="bg-white rounded-xl shadow-sm p-4 mb-6"> <div class="flex items-center"> <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white mr-4"> <i class="fas fa-user text-2xl"></i> </div> <div class="flex-1"> <h2 class="font-semibold text-gray-800 text-lg">用户名</h2> <p class="text-sm text-gray-500">example@email.com</p> </div> <button class="text-blue-500"> <i class="fas fa-edit"></i> </button> </div> </div> <div class="mb-6"> <h2 class="text-md font-semibold text-gray-700 mb-3 px-1">通用</h2> <div class="bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100"> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3"> <i class="fas fa-bell text-blue-500"></i> </div> <div> <h3 class="font-medium text-gray-800">通知</h3> <p class="text-xs text-gray-500">管理推送提醒设置</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3"> <i class="fas fa-language text-indigo-500"></i> </div> <div> <h3 class="font-medium text-gray-800">语言</h3> <p class="text-xs text-gray-500">简体中文</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3"> <i class="fas fa-map text-purple-500"></i> </div> <div> <h3 class="font-medium text-gray-800">地图设置</h3> <p class="text-xs text-gray-500">选择地图提供商和样式</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3"> <i class="fas fa-cloud text-green-500"></i> </div> <div> <h3 class="font-medium text-gray-800">数据存储</h3> <p class="text-xs text-gray-500">管理本地和云端数据</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> </div> </div> <div class="mb-6"> <h2 class="text-md font-semibold text-gray-700 mb-3 px-1">隐私与安全</h2> <div class="bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100"> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mr-3"> <i class="fas fa-lock text-amber-500"></i> </div> <div> <h3 class="font-medium text-gray-800">隐私设置</h3> <p class="text-xs text-gray-500">管理数据共享权限</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-3"> <i class="fas fa-shield-alt text-red-500"></i> </div> <div> <h3 class="font-medium text-gray-800">账户安全</h3> <p class="text-xs text-gray-500">修改密码和安全设置</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center mr-3"> <i class="fas fa-fingerprint text-teal-500"></i> </div> <div> <h3 class="font-medium text-gray-800">生物识别</h3> <p class="text-xs text-gray-500">使用指纹或面容解锁</p> </div> </div> <label class="inline-flex items-center cursor-pointer"> <input type="checkbox" value="" class="sr-only peer" checked> <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div> </label> </div> </div> </div> <div class="mb-6"> <h2 class="text-md font-semibold text-gray-700 mb-3 px-1">追踪设置</h2> <div class="bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100"> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center mr-3"> <i class="fas fa-clock text-cyan-500"></i> </div> <div> <h3 class="font-medium text-gray-800">位置更新频率</h3> <p class="text-xs text-gray-500">1分钟</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center mr-3"> <i class="fas fa-history text-pink-500"></i> </div> <div> <h3 class="font-medium text-gray-800">历史轨迹保存</h3> <p class="text-xs text-gray-500">30天</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mr-3"> <i class="fas fa-battery-half text-orange-500"></i> </div> <div> <h3 class="font-medium text-gray-800">低电量模式</h3> <p class="text-xs text-gray-500">当设备电量低时降低更新频率</p> </div> </div> <label class="inline-flex items-center cursor-pointer"> <input type="checkbox" value="" class="sr-only peer" checked> <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div> </label> </div> </div> </div> <div class="mb-6"> <h2 class="text-md font-semibold text-gray-700 mb-3 px-1">其他</h2> <div class="bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100"> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3"> <i class="fas fa-info-circle text-gray-500"></i> </div> <div> <h3 class="font-medium text-gray-800">关于</h3> <p class="text-xs text-gray-500">版本 1.0.0</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3"> <i class="fas fa-question-circle text-gray-500"></i> </div> <div> <h3 class="font-medium text-gray-800">帮助与支持</h3> <p class="text-xs text-gray-500">常见问题与联系方式</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> <div class="p-4 flex justify-between items-center"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3"> <i class="fas fa-file-alt text-gray-500"></i> </div> <div> <h3 class="font-medium text-gray-800">隐私政策</h3> <p class="text-xs text-gray-500">查看我们的隐私条款</p> </div> </div> <i class="fas fa-chevron-right text-gray-400"></i> </div> </div> </div> <div class="mt-8 mb-4"> <button class="w-full py-3 text-red-500 font-medium bg-white rounded-xl shadow-sm"> 退出登录 </button> </div> </div>
+                    <!-- End Settings Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Geofence -->
+        <div class="phone-frame">
+             <div class="phone-title">安全区域</div>
+             <div class="phone-screen-content-wrapper">
+                <div class="phone-screen-content bg-gray-50">
+                    <!-- Content from geofence.html -->
+                    <div class="bg-white px-4 py-4 shadow-sm"> <div class="flex items-center justify-between"> <div class="flex items-center"> <a href="#" class="mr-4" onclick="return false;"><i class="fas fa-arrow-left text-gray-600 text-lg"></i></a> <h1 class="text-lg font-semibold text-gray-800">安全区域</h1> </div> <button class="text-white bg-blue-500 px-3 py-1 rounded-lg text-sm"> 保存 </button> </div> </div>
+                    <div class="px-4 py-3 bg-white border-b border-gray-200"> <div class="flex items-center justify-between"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full overflow-hidden mr-3"> <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div> <h3 class="font-semibold text-gray-800">奶糖</h3> <p class="text-xs text-gray-500">柯基 • 2岁</p> </div> </div> <div class="flex items-center"> <select class="bg-gray-100 border-0 text-gray-700 text-sm rounded-lg py-1 px-3 mr-2"> <option>家</option> <option>公园</option> <option>宠物店</option> <option>+ 新区域</option> </select> <button class="text-blue-500 bg-blue-50 p-1 rounded-full"> <i class="fas fa-plus"></i> </button> </div> </div> </div>
+                    <!-- Geofence Map Container -->
+                    <div class="map-container geofence-map-container" style="background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&q=80');">
+                        <div class="safe-zone"> <div class="zone-center"></div> <div class="resize-handle handle-n"></div> <div class="resize-handle handle-e"></div> <div class="resize-handle handle-s"></div> <div class="resize-handle handle-w"></div> </div>
+                        <div class="location-marker" style="left: 50%; top: 45%;"> <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center relative border-2 border-white shadow-md"> <i class="fas fa-paw text-white"></i> <div class="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow"> <div class="w-2.5 h-2.5 bg-green-500 rounded-full"></div> </div> </div> </div>
+                    </div>
+                    <!-- Geofence Controls -->
+                    <div class="px-4 pt-4 pb-4 bg-white border-t border-gray-200 geofence-controls">
+                        <div class="flex justify-between items-center mb-3"> <div class="flex-1"> <h3 class="font-semibold text-gray-800 text-sm mb-0.5">安全区域半径</h3> <p class="text-xs text-gray-500">当宠物离开此区域时将发送通知</p> </div> <div class="text-right ml-2"> <div class="text-lg font-bold text-blue-500">100 米</div> </div> </div>
+                         <div class="mb-4"> <input type="range" min="50" max="500" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"> <div class="flex justify-between text-xs text-gray-500 mt-1"> <span>50m</span> <span>500m</span> </div> </div>
+                        <div class="flex justify-between items-center mb-4"> <div> <h3 class="font-semibold text-gray-800 text-sm">区域形状</h3> </div> <div class="flex items-center gap-2"> <button class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white shadow"> <i class="fas fa-circle text-sm"></i> </button> <button class="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 shadow-sm"> <i class="fas fa-square text-sm"></i> </button> <button class="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-gray-600 shadow-sm"> <i class="fas fa-draw-polygon text-sm"></i> </button> </div> </div>
+                        <div class="flex justify-between items-center"> <div class="flex-1"> <h3 class="font-semibold text-gray-800 text-sm">活动报警</h3> <p class="text-xs text-gray-500">宠物离开区域时通知我</p> </div> <label class="inline-flex items-center cursor-pointer"> <input type="checkbox" value="" class="sr-only peer" checked> <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div> </label> </div>
+                    </div>
+                    <!-- End Geofence Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Share -->
+        <div class="phone-frame">
+             <div class="phone-title">位置分享</div>
+            <div class="phone-screen-content-wrapper">
+                 <div class="phone-screen-content bg-gray-50">
+                    <!-- Content from share.html -->
+                    <div class="bg-white px-4 py-4 shadow-sm"> <div class="flex items-center"> <a href="#" class="mr-4" onclick="return false;"><i class="fas fa-arrow-left text-gray-600 text-lg"></i></a> <h1 class="text-lg font-semibold text-gray-800">位置分享</h1> </div> </div>
+                    <div class="px-4 py-3 bg-white border-b border-gray-200"> <div class="flex items-center"> <div class="w-10 h-10 rounded-full overflow-hidden mr-3"> <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover"> </div> <div class="flex-1"> <div class="flex justify-between items-center"> <h3 class="font-semibold text-gray-800">奶糖</h3> <div class="flex items-center text-sm text-green-600"> <i class="fas fa-circle text-xs mr-1"></i> <span>在线</span> </div> </div> <p class="text-xs text-gray-500">北京市朝阳区建国路89号</p> </div> <div class="ml-3"> <button class="bg-gray-100 p-2 rounded-full"> <i class="fas fa-chevron-down text-gray-600"></i> </button> </div> </div> </div>
+                     <div class="map-preview relative mb-4" style="height: 200px; background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&q=80');"> <div class="share-location-marker"> <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center relative border-2 border-white shadow-md"> <i class="fas fa-paw text-white"></i> <div class="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow"> <div class="w-2.5 h-2.5 bg-green-500 rounded-full"></div> </div> </div> </div> <div class="absolute left-0 right-0 bottom-0 p-3 bg-gradient-to-t from-black/50 to-transparent flex justify-end"> <button class="bg-white text-gray-800 px-3 py-1 rounded-lg text-sm flex items-center"> <i class="fas fa-expand-alt mr-1 text-xs"></i> <span>查看详情</span> </button> </div> </div>
+                    <div class="px-4 mb-6 pb-4"> <!-- Added pb-4 -->
+                        <h2 class="text-md font-semibold text-gray-700 mb-3">分享设置</h2>
+                        <div class="bg-white rounded-xl shadow-sm p-4 mb-4"> <div class="flex justify-between items-center mb-4"> <div class="flex-1"> <h3 class="font-semibold text-gray-800 text-sm mb-0.5">分享模式</h3> <p class="text-xs text-gray-500">选择一个分享的有效期</p> </div> <div> <select class="bg-gray-100 border-0 text-gray-700 text-xs rounded-lg py-1 px-2"> <option>1小时</option> <option>4小时</option> <option>24小时</option> <option>永久</option> </select> </div> </div> <div class="flex justify-between items-center mb-4"> <div class="flex-1"> <h3 class="font-semibold text-gray-800 text-sm">实时更新</h3> <p class="text-xs text-gray-500">被分享人可以看到宠物实时位置更新</p> </div> <label class="inline-flex items-center cursor-pointer"> <input type="checkbox" value="" class="sr-only peer" checked> <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div> </label> </div> <div class="flex justify-between items-center"> <div class="flex-1"> <h3 class="font-semibold text-gray-800 text-sm">历史轨迹</h3> <p class="text-xs text-gray-500">被分享人可以查看历史活动轨迹</p> </div> <label class="inline-flex items-center cursor-pointer"> <input type="checkbox" value="" class="sr-only peer"> <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div> </label> </div> </div>
+                        <h2 class="text-md font-semibold text-gray-700 mb-3">分享方式</h2>
+                        <div class="grid grid-cols-4 gap-4 mb-6"> <div class="flex flex-col items-center"> <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mb-1"> <i class="fab fa-weixin text-green-600 text-xl"></i> </div> <span class="text-xs text-gray-700">微信</span> </div> <div class="flex flex-col items-center"> <div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mb-1"> <i class="fas fa-comment-dots text-blue-500 text-xl"></i> </div> <span class="text-xs text-gray-700">短信</span> </div> <div class="flex flex-col items-center"> <div class="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center mb-1"> <i class="fas fa-envelope text-purple-500 text-xl"></i> </div> <span class="text-xs text-gray-700">邮件</span> </div> <div class="flex flex-col items-center"> <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-1"> <i class="fas fa-ellipsis-h text-gray-500 text-xl"></i> </div> <span class="text-xs text-gray-700">更多</span> </div> </div>
+                        <div class="mb-6"> <h2 class="text-md font-semibold text-gray-700 mb-3">分享链接</h2> <div class="bg-white rounded-xl shadow-sm p-4"> <div class="flex justify-between items-center mb-4"> <p class="text-xs text-gray-500">生成一个分享链接，可通过多种渠道发送</p> <button class="bg-blue-500 text-white py-1 px-3 rounded-lg text-sm"> 生成链接 </button> </div> <div class="bg-gray-50 rounded-lg p-3 flex items-center"> <div class="flex-1 truncate text-sm text-gray-600"> https://pet-tracker.com/share/8f72a3b9 </div> <button class="ml-2 text-blue-500"> <i class="far fa-copy"></i> </button> </div> </div> </div>
+                        <div class="mb-6"> <div class="flex justify-between items-center mb-3"> <h2 class="text-md font-semibold text-gray-700">已共享</h2> <span class="text-xs text-gray-500">2人</span> </div> <div class="bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100"> <div class="p-4 flex items-center"> <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-user text-white"></i> </div> <div class="flex-1"> <div class="flex justify-between"> <h3 class="font-medium text-gray-800">张小明</h3> <span class="text-xs text-gray-500">1小时前</span> </div> <p class="text-xs text-gray-500">有效期至: 今天 23:59</p> </div> <button class="text-red-500 text-sm ml-2"> 取消 </button> </div> <div class="p-4 flex items-center"> <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3 flex-shrink-0"> <i class="fas fa-user text-white"></i> </div> <div class="flex-1"> <div class="flex justify-between"> <h3 class="font-medium text-gray-800">李华</h3> <span class="text-xs text-gray-500">昨天</span> </div> <p class="text-xs text-gray-500">永久有效</p> </div> <button class="text-red-500 text-sm ml-2"> 取消 </button> </div> </div> </div>
+                    </div>
+                    <!-- End Share Content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Add other sections similarly -->
+
+    </div> <!-- End grid -->
+
+    <script>
+        function updateScaling() {
+            const phoneFrames = document.querySelectorAll('.phone-frame');
+            const fixedContentWidth = 375; // Target design width
+
+            phoneFrames.forEach(frame => {
+                const wrapper = frame.querySelector('.phone-screen-content-wrapper');
+                const innerContent = frame.querySelector('.phone-screen-content');
+                if (!wrapper || !innerContent) return;
+
+                // Calculate scale factor based ONLY on width
+                const containerWidth = frame.offsetWidth - 12; // Subtract border width (6px * 2)
+                const scaleFactor = containerWidth / fixedContentWidth;
+
+                // Apply the scale factor
+                innerContent.style.setProperty('--scale-factor', scaleFactor);
+
+                // Calculate the scaled height based on the content's intrinsic height
+                // We need the unscaled height first. Temporarily remove scale to measure.
+                 const currentTransform = innerContent.style.transform;
+                 innerContent.style.transform = 'scale(1)'; // Temporarily unscale
+                 const intrinsicHeight = innerContent.scrollHeight;
+                 innerContent.style.transform = currentTransform; // Reapply original or new scale
+
+                const scaledHeight = intrinsicHeight * scaleFactor;
+
+                // Set the wrapper height to match the scaled content height
+                wrapper.style.height = `${scaledHeight}px`;
+
+                // Center the scaled content horizontally (left offset)
+                const offsetX = (containerWidth - (fixedContentWidth * scaleFactor)) / 2;
+                // No vertical offset needed as wrapper height matches scaled content
+                innerContent.style.left = `${offsetX}px`;
+                innerContent.style.top = `0px`; // Content starts at the top of the wrapper
+
+            });
+        }
+
+        // Debounce function to limit resize event calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const debouncedUpdateScaling = debounce(updateScaling, 100);
+
+        // Initial scaling on load
+        window.addEventListener('load', () => {
+            updateScaling();
+            // Re-run after a short delay for images/fonts
+            setTimeout(updateScaling, 200);
+            setTimeout(updateScaling, 500);
+        });
+        // Update scaling on window resize
+        window.addEventListener('resize', debouncedUpdateScaling);
+
+
+    </script>
+
 </body>
 </html>
