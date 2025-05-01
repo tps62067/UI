@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史轨迹 - 宠物GPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            padding-bottom: 70px;
+        }
+        .map-preview {
+            height: 220px;
+            background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&q=80');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        .timeline-line {
+            position: absolute;
+            left: 18px;
+            top: 24px;
+            bottom: 24px;
+            width: 2px;
+            background-color: #E5E7EB;
+            z-index: 0;
+        }
+        .path-line {
+            border: 2px dashed #3B82F6;
+            position: absolute;
+            width: 60%;
+            height: 40%;
+            border-radius: 50%;
+            top: 30%;
+            left: 20%;
+            transform: rotate(-30deg);
+            border-right: none;
+            border-bottom: none;
+        }
+        .start-point {
+            position: absolute;
+            left: 20%;
+            top: 70%;
+        }
+        .end-point {
+            position: absolute;
+            left: 80%;
+            top: 30%;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 顶部导航栏 -->
+    <div class="bg-white px-4 py-4 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="home.html" class="mr-4">
+                    <i class="fas fa-arrow-left text-gray-600 text-lg"></i>
+                </a>
+                <h1 class="text-lg font-semibold text-gray-800">历史轨迹</h1>
+            </div>
+            <button class="text-gray-600 bg-gray-100 p-2 rounded-full">
+                <i class="fas fa-calendar-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 宠物选择 -->
+    <div class="px-4 py-3 bg-white border-b border-gray-200">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full overflow-hidden mr-3">
+                <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&q=80" alt="宠物照片" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-1">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-semibold text-gray-800">奶糖</h3>
+                    <span class="text-xs text-gray-500">今天，7月20日</span>
+                </div>
+                <div class="flex items-center text-xs">
+                    <span class="text-gray-500">总行程:</span>
+                    <span class="ml-1 text-blue-500 font-medium">1.8公里</span>
+                    <span class="mx-2 text-gray-300">|</span>
+                    <span class="text-gray-500">活动时间:</span>
+                    <span class="ml-1 text-blue-500 font-medium">2小时30分钟</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 地图预览 -->
+    <div class="map-preview relative mb-4">
+        <!-- 轨迹路线 -->
+        <div class="path-line"></div>
+        
+        <!-- 起点标记 -->
+        <div class="start-point">
+            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <i class="fas fa-flag text-white text-sm"></i>
+            </div>
+        </div>
+        
+        <!-- 终点标记 -->
+        <div class="end-point">
+            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                <i class="fas fa-flag-checkered text-white text-sm"></i>
+            </div>
+        </div>
+        
+        <!-- 查看详情按钮 -->
+        <div class="absolute left-0 right-0 bottom-0 p-3 bg-gradient-to-t from-black/50 to-transparent flex justify-end">
+            <button class="bg-white text-gray-800 px-3 py-1 rounded-lg text-sm flex items-center">
+                <i class="fas fa-expand-alt mr-1 text-xs"></i>
+                <span>查看详情</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 历史时间线 -->
+    <div class="px-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-md font-semibold text-gray-700">活动记录</h3>
+            <div class="flex items-center text-blue-500 text-sm">
+                <span>筛选</span>
+                <i class="fas fa-filter ml-1"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-4 relative mb-4">
+            <div class="timeline-line"></div>
+            
+            <!-- 时间点 1 -->
+            <div class="flex relative z-10 mb-6">
+                <div class="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fas fa-home text-white"></i>
+                </div>
+                <div class="pt-1">
+                    <h4 class="font-medium text-gray-800">出发</h4>
+                    <p class="text-xs text-gray-500 mb-1">早上 08:30</p>
+                    <p class="text-sm text-gray-600">北京市朝阳区建国路89号</p>
+                </div>
+            </div>
+            
+            <!-- 时间点 2 -->
+            <div class="flex relative z-10 mb-6">
+                <div class="w-9 h-9 bg-green-500 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fas fa-tree text-white"></i>
+                </div>
+                <div class="pt-1">
+                    <h4 class="font-medium text-gray-800">公园活动</h4>
+                    <p class="text-xs text-gray-500 mb-1">上午 09:15 - 10:30</p>
+                    <p class="text-sm text-gray-600">朝阳公园北门</p>
+                    <div class="mt-2 px-3 py-2 bg-gray-50 rounded-lg">
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-running text-gray-500 mr-2"></i>
+                            <span class="text-gray-600">高活跃度: 75分钟</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 时间点 3 -->
+            <div class="flex relative z-10 mb-6">
+                <div class="w-9 h-9 bg-yellow-500 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fas fa-utensils text-white"></i>
+                </div>
+                <div class="pt-1">
+                    <h4 class="font-medium text-gray-800">休息</h4>
+                    <p class="text-xs text-gray-500 mb-1">上午 10:30 - 11:00</p>
+                    <p class="text-sm text-gray-600">宠物友好咖啡馆</p>
+                </div>
+            </div>
+            
+            <!-- 时间点 4 -->
+            <div class="flex relative z-10">
+                <div class="w-9 h-9 bg-red-500 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fas fa-home text-white"></i>
+                </div>
+                <div class="pt-1">
+                    <h4 class="font-medium text-gray-800">返回</h4>
+                    <p class="text-xs text-gray-500 mb-1">上午 11:00</p>
+                    <p class="text-sm text-gray-600">北京市朝阳区建国路89号</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 历史轨迹记录 -->
+        <h3 class="text-md font-semibold text-gray-700 mb-3">历史记录</h3>
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+            <div class="divide-y divide-gray-100">
+                <div class="p-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <h4 class="font-medium text-gray-800">昨天</h4>
+                        <span class="text-xs text-gray-500">7月19日</span>
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <span class="text-gray-500">总行程:</span>
+                        <span class="ml-1 text-gray-700">2.5公里</span>
+                        <span class="mx-2 text-gray-300">|</span>
+                        <span class="text-gray-500">活动时间:</span>
+                        <span class="ml-1 text-gray-700">3小时15分钟</span>
+                    </div>
+                </div>
+                
+                <div class="p-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <h4 class="font-medium text-gray-800">前天</h4>
+                        <span class="text-xs text-gray-500">7月18日</span>
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <span class="text-gray-500">总行程:</span>
+                        <span class="ml-1 text-gray-700">1.2公里</span>
+                        <span class="mx-2 text-gray-300">|</span>
+                        <span class="text-gray-500">活动时间:</span>
+                        <span class="ml-1 text-gray-700">1小时45分钟</span>
+                    </div>
+                </div>
+                
+                <div class="p-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <h4 class="font-medium text-gray-800">星期一</h4>
+                        <span class="text-xs text-gray-500">7月17日</span>
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <span class="text-gray-500">总行程:</span>
+                        <span class="ml-1 text-gray-700">3.0公里</span>
+                        <span class="mx-2 text-gray-300">|</span>
+                        <span class="text-gray-500">活动时间:</span>
+                        <span class="ml-1 text-gray-700">4小时</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 px-2">
+        <a href="home.html" class="flex flex-col items-center text-gray-500">
+            <i class="fas fa-home text-xl"></i>
+            <span class="text-xs mt-1">首页</span>
+        </a>
+        <a href="map.html" class="flex flex-col items-center text-gray-500">
+            <i class="fas fa-map-marker-alt text-xl"></i>
+            <span class="text-xs mt-1">地图</span>
+        </a>
+        <a href="pets.html" class="flex flex-col items-center text-gray-500">
+            <i class="fas fa-paw text-xl"></i>
+            <span class="text-xs mt-1">宠物</span>
+        </a>
+        <a href="settings.html" class="flex flex-col items-center text-gray-500">
+            <i class="fas fa-cog text-xl"></i>
+            <span class="text-xs mt-1">设置</span>
+        </a>
+    </div>
+</body>
+</html> 

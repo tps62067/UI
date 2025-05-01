@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宠物GPS定位应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        iframe {
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+        .device-frame {
+            width: 375px;
+            height: 812px;
+            background-color: white;
+            border-radius: 40px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        .device-notch {
+            width: 180px;
+            height: 30px;
+            background-color: #000;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6 bg-gray-100">
+    <div class="flex flex-col md:flex-row gap-8">
+        <div class="flex flex-col items-center">
+            <h2 class="text-lg font-semibold mb-3 text-gray-700">宠物GPS定位应用原型</h2>
+            <div class="device-frame">
+                <div class="device-notch"></div>
+                <iframe id="appFrame" src="home.html"></iframe>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">页面导航</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="document.getElementById('appFrame').src='home.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-home mr-2"></i>首页
+                </button>
+                <button onclick="document.getElementById('appFrame').src='map.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-map-marker-alt mr-2"></i>地图
+                </button>
+                <button onclick="document.getElementById('appFrame').src='history.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-history mr-2"></i>历史轨迹
+                </button>
+                <button onclick="document.getElementById('appFrame').src='pets.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-paw mr-2"></i>宠物管理
+                </button>
+                <button onclick="document.getElementById('appFrame').src='devices.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-microchip mr-2"></i>设备管理
+                </button>
+                <button onclick="document.getElementById('appFrame').src='settings.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-cog mr-2"></i>设置
+                </button>
+                <button onclick="document.getElementById('appFrame').src='geofence.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-draw-polygon mr-2"></i>安全区域
+                </button>
+                <button onclick="document.getElementById('appFrame').src='share.html'" class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-share-alt mr-2"></i>位置分享
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
